@@ -1,0 +1,162 @@
+import nltk
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import confusion_matrix
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+data = pd.read_csv('coffee.csv')
+data.head()
+
+
+Q1:
+# Determining the number of reviews
+data.reviews.count()
+
+# Determine the percent of 1, 2, 3, 4 and 5 star reviews
+data_percen = data.groupby(['stars']).size().reset_index(name='review_counts')
+data_percent['percentage_reviews'] = 100*data_percent['review_counts']/data_percent['review_counts'].sum()
+data_percent
+
+#Create a new data set for modeling with the following columns:
+#Column 1: 'positive' if review = 4 or 5, and 'negative' if review = 1 or 2
+#Column 2: review text
+data_2 = data[data.stars != 3]
+data_2['sentiment'] = np.where(data_2['stars']>=4, 'positive', 'negative')
+print(data_2.reviews.count())
+data_2.head()
+
+# Creating data set with sentiment and reviews only
+model_data = data_2[['sentiment','reviews']]
+print(model_data.head())
+#Take a look at the number of positive and negative reviews in the newly created data set.
+model_data.groupby(['sentiment']).size().reset_index(name='sentiment_counts')
+
+# Text preprocessing steps - remove numbers, captial letters and punctuation
+import re
+import string
+alphanumeric = lambda x: re.sub(r"""\w*\d\w*""", ' ', x)
+punc_lower = lambda x: re.sub('[%s]' % re.escape(string.punctuation), ' ', x.lower())
+model_data['reviews'] = model_data.reviews.map(alphanumeric).map(punc_lower)
+model_data.head()
+
+
+Q2:
+# Splitting the data into X and y
+X = model_data.reviews
+y = model_data.sentiment
+
+# Matrix 1 (Unigrams)
+# Creating numerical features with Count Vectorizer (encoding the input data)
+from sklearn.feature_extraction.text import CountVectorizer
+cv = CountVectorizer(stop_words ='english')
+X_cv = cv.fit_transform(X)
+# Print the dimensions of the training set (text messages, terms)
+print(X_cv.toarray().shape)
+
+# Matrix 2 (Unigrams and Bigrams)
+# Creating numerical features with Count Vectorizer (encoding the input data)
+from sklearn.feature_extraction.text import CountVectorizer
+cv_ub = CountVectorizer(stop_words ='english', binary = True, ngram_range=(1, 2))
+X_cv_ub = cv_ub.fit_transform(X)
+# Print the dimensions of the training set (text messages, terms)
+print(X_cv_ub.toarray().shape)
+
+# Splitting the Unigrams data into training and test set
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X_cv,y,test_size=0.2,random_state=1)
+
+# Splitting the Unigrams data into training and test set
+from sklearn.model_selection import train_test_split
+X_train_ub, X_test_ub, y_train_ub, y_test_ub = train_test_split(X_cv_ub,y,test_size=0.2,random_state=1)
+
+
+Q3:
+# Creating a function for the model
+def logreg(X_train,y_train,X_test,y_test):
+    lr = LogisticRegression()
+    lr.fit(X_train,y_train)
+    y_pred = lr.predict(X_test)
+    accuracy = lr.score(X_test,y_test)
+    cm = confusion_matrix(y_test,y_pred)
+    cr = classification_report(y_test,y_pred)
+    print('Accuracy is' + str(accuracy))
+    print('\nConfusion Matrix is' + str(cm))
+    print('\nEvaluation Metrics are:' + str(cr))
+    
+# Running model on Matrix 1
+logreg(X_train,y_train,X_test,y_test)
+
+# Running model on Matrix 2
+logreg(X_train_ub,y_train_ub,X_test_ub,y_test_ub)
+
+#If we compare the above obtained results, we can notice that accuracy is higher for the Unigram model i.e. Matrix 1 (85%) as compared 
+to the one for Unigram-Bigram model i.e. Matrix 2 (83%). Also, precision and recall of "Positive" sentiments are more than "Negative" 
+sentiments in both the models which means that the model is able to predict the positive sentiments better than negative sentiments
+
+
+Q4:
+# Bernoulli Naive Bayes
+def nb(X_train,y_train,X_test,y_test):
+    naiveb = BernoulliNB()
+    naiveb.fit(X_train,y_train)
+    y_pred = naiveb.predict(X_test)
+    accuracy = naiveb.score(X_test,y_test)
+    cm = confusion_matrix(y_test,y_pred)
+    cr = classification_report(y_test,y_pred)
+    print('Accuracy is' + str(accuracy))
+    print('\nConfusion Matrix is' + str(cm))
+    print('\nEvaluation Metrics are:' + str(cr))
+    
+nb(X_train_ub,y_train_ub,X_test_ub,y_test_ub)
+
+# Multinomial Naive Bayes
+def mnb(X_train,y_train,X_test,y_test):
+    mn = MultinomialNB()
+    mn.fit(X_train,y_train)
+    y_pred = mn.predict(X_test)
+    accuracy = mn.score(X_test,y_test)
+    cm = confusion_matrix(y_test,y_pred)
+    cr = classification_report(y_test,y_pred)
+    print('Accuracy is' + str(accuracy))
+    print('\nConfusion Matrix is' + str(cm))
+    print('\nEvaluation Metrics are:' + str(cr))
+    
+mnb(X_train_ub,y_train_ub,X_test_ub,y_test_ub)
+
+#Multinomial model is performing much better compared to Bernoulli model for Naive Bayes with accuracy being ~88% and ~68% respectivelly.
+This Model also followed the trend of predicting positive sentiments better than negative ones by giving high value of precision and 
+recall for positive sentiments compared to negative ones.
+Now, if we compared Logistic Regression model with Naive Bayes model: In case of Unigram-Bigram dataset model, Multinomial Naive Bayes 
+is performing better than Logistic regression In case of Unigram dataset model, Logistic regression model is performing better than 
+Binomial Naive Bayes.
+
+
+Q5:
+# TF_IDF Vectorization
+tv = TfidfVectorizer(stop_words='english')
+X_tv = tv.fit_transform(X)
+
+# Dividing the dataset into training and test data
+X_train, X_test, y_train, y_test = train_test_split(X_tv, y, test_size = 0.2, random_state = 1)
+
+# Logistic Model
+logreg(X_train, y_train, X_test ,y_test)
+
+# Bernoulli Naive Bayes Model
+nb(X_train, y_train, X_test ,y_test)
+
+# Multinomial Naive Bayes Model
+mnb(X_train, y_train, X_test ,y_test)
+
+#Among TF-IDF vectorization models, Logistic model has performed the best as compared to Binomial and Multinomial models with 
+accuracies of ~76%, ~74% and ~75% respectivelly. Also, here Logistic and Multinomial models have given better precision than 
+Binomial model for negative sentiments.
+We can now notice that Count Vectorization has performed better than TF_IDF Vectorization in all the cases.
+Out of all the models which we ran, Multinomial Naive Bayes model has done the best job in predicting the positive and negative 
+cappuccino cup reviews.
