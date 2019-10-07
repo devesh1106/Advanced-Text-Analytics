@@ -1,0 +1,29 @@
+We will be using a song lyric dataset from Kaggle to identify songs with similar lyrics.
+
+Q1: 
+Filter the lyrics data set to only select songs by The Beatles.
+How many songs are there in total by The Beatles?
+Take a look at the first song's lyrics.
+
+Q2:
+Preprocessing steps:
+
+Note the '\n' (new line) characters in the lyrics. Remove them using regular expressions.
+Remove all words with numbers using regular expressions.
+Create a document-term matrix using Count Vectorizer, with each row as a song and each column as a word in the lyrics. 
+Have the Count Vectorizer remove all stop words as well.
+
+Q3:
+Take a look at the lyrics for the song "Imagine".
+Which song is the most similar to the song "Imagine"?
+Use cosine similarity to calculate the similarity
+Use Count Vectorizer to numerically encode the lyrics
+Find the most similar song using the TF-IDF Vectorizer.
+Compare the most similar song of the outputs of both the Count Vectorizer and the TF-IDF Vectorizer.
+
+Q4:
+Which two Beatles songs are the most similar?
+
+Using Count Vectorizer
+Using TF-IDF Vectorizer
+Compare the results. Which Vectorizer seems to do a better job?
