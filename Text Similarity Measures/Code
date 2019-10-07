@@ -1,0 +1,106 @@
+import nltk
+import pandas as pd
+import re
+import sklearn
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+data = pd.read_csv('songdata.csv')
+data.head()
+
+Q1:
+# Filtering only The Beatles songs
+condition =  data['artist']=="The Beatles"
+condition_output = pd.DataFrame(data[condition])
+condition_output.head(5)
+
+# Total number of songs by Beatles
+len(condition_output)
+
+# Lyrics for the first song
+condition_output.text.iloc[0]
+
+
+Q2:
+# Replacing '\n' charcaters from the lyrics
+condition_output.text = condition_output.text.str.replace('\n',' ')
+condition_output.head(5)
+
+# Removing words with numbers
+condition_output.text = condition_output.text.apply(lambda x: re.sub("\w*\d\w*","",x))
+
+#Creating document-term matrix
+from sklearn.feature_extraction.text import CountVectorizer
+
+count_vect = CountVectorizer(stop_words='english')
+transf = count_vect.fit_transform(condition_output.text)
+bagofwords = pd.DataFrame(transf.toarray(), columns=count_vect.get_feature_names())
+
+songs = pd.DataFrame(condition_output.song)
+songs.columns = ["Song"]
+bagofwords_final = pd.concat([songs.reset_index(drop=True),bagofwords],axis=1)
+bagofwords_final
+
+
+Q3:
+# Viewing the lyrics of Imagine song
+song_name =  data['song']=="Imagine"
+lyrics = pd.DataFrame(condition_output[song_name])
+lyrics.iloc[0,3]
+
+# Using cosine sinilarity to calculate similarity
+similar = cosine_similarity(bagofwords)
+similar_matrix = np.asmatrix(np.asarray(similar))
+similar_df = pd.DataFrame(similar_matrix)
+
+bagofwords_final[bagofwords_final.Song == 'Imagine']
+
+similar_df.iloc[130].sort_values(ascending = False)
+
+bagofwords_final.Song.iloc[121]
+
+# Using Count Vectorizer to numerically encode the lyrics
+from sklearn.feature_extraction.text import TfidfVectorizer
+count_vector = TfidfVectorizer(stop_words = 'english')
+count_vector_transf = counAt_vector.fit_transform(condition_output.text)
+TF_IDF = pd.DataFrame(count_vector_transf.toarray(), columns = count_vector.get_feature_names())
+TF_final = pd.concat([songs.reset_index(drop = True),TF_IDF],axis = 1)
+TF_final
+
+# Finding the most similar song using TF_IDF
+similar_TFIDF = cosine_similarity(TF_IDF)
+similar_matrix_TFIDF = np.asmatrix(np.asarray(similar_TFIDF))
+similar_TFIDF_df = pd.DataFrame(similar_matrix_TFIDF)
+similar_TFIDF_df.iloc[130].sort_values(ascending = False)
+
+TF_final.Song.iloc[122]
+
+
+Q4:
+def GetMax(M):
+    song1 = -1
+    song2 = -1
+    max_similarity = 0 
+    for i,row in enumerate(M):
+        row[np.argmax(row)] = 0
+        ind = np.argmax(row)
+        temp_max = row[ind]
+        if temp_max>=max_similarity:
+            song1= i 
+            song2= ind
+            max_similarity = temp_max
+    return song1,song2,max_similarity
+    
+ # Using Count Vectorization
+song1cv,song2cv,cv_max = GetMax(similar)
+
+print("Similar Songs using Count Vectorization- ",condition_output.song.iloc[song1cv],",", condition_output.song.iloc[song2cv]," with a similarity of ",np.round(cv_max,3))
+
+# Using TF_IDF Vectorization
+song1tf,song2tf,tf_max = GetMax(similar_TFIDF)
+
+print("Similar Songs using TF_IDF Vectorization- ",condition_output.song.iloc[song1tf],",", condition_output.song.iloc[song2tf]," with a similarity of ",np.round(tf_max,3))
+
+#Count Vectorization is giving "Love Me Do" and "For No One" as 2 similar songs with a similarity value of 0.498
+#TF_IDF is giving "Love Me Do" and "If I Fell" as 2 similar songs with a siilarity value of 0.528
+#Therefore, TF_IDF seems to do a better job because of a higher similarity value
