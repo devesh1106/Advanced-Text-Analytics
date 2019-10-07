@@ -1,0 +1,44 @@
+We will be using customer churn data from the telecom industry for the first week's exercises. 
+The data file is called Orange_Telecom_Churn_Data.csv. 
+
+Q1:
+Begin by importing the data. Examine the columns and data.
+Notice that the data contains a state, area code, and phone number. Do you think these are good features to use when building a 
+machine learning model? Why or why not?
+
+
+Q2:
+Notice that some of the columns are categorical data and some are floats. These features will need to be numerically encoded using one of 
+the methods from the lecture.
+Finally, remember from the lecture that K-nearest neighbors requires scaled data. Scale the data using one of the scaling methods 
+discussed in the lecture.
+
+
+Q3:
+Separate the feature columns (everything except churned) from the label (churned). This will create two tables.
+Fit a K-nearest neighbors model with a value of k=3 to this data and predict the outcome on the same data.
+
+
+Q4:
+Ways to measure error haven't been discussed in class yet, but accuracy is an easy one to understand--it is simply the percent of labels
+that were correctly predicted (either true or false).
+
+Write a function to calculate accuracy using the actual and predicted labels.
+Using the function, calculate the accuracy of this K-nearest neighbors model on the data.
+
+
+Q5:
+Fit the K-nearest neighbors model again with n_neighbors=3 but this time use distance for the weights. Calculate the accuracy using the 
+function you created above.
+Fit another K-nearest neighbors model. This time use uniform weights but set the power parameter for the Minkowski distance metric to be
+1 (p=1) i.e. Manhattan Distance.
+When weighted distances are used for part 1 of this question, a value of 1.0 should be returned for the accuracy. 
+Why do you think this is? Hint: we are predicting on the data and with KNN the model is the data.
+
+
+Q6:
+Fit a K-nearest neighbors model using values of k (n_neighbors) ranging from 1 to 20. Use uniform weights (the default). 
+The coefficient for the Minkowski distance (p) can be set to either 1 or 2--just be consistent. Store the accuracy and the value of 
+k used from each of these fits in a list or dictionary.
+Plot (or view the table of) the accuracy vs k. What do you notice happens when k=1? Why do you think this is? Hint: it's for the same 
+reason discussed above.
