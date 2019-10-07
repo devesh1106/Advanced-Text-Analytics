@@ -1,0 +1,45 @@
+We will be using the same review data set from Kaggle from Week 2 for this exercise. The product we'll focus on this time is a 
+cappuccino cup. The goal of this week is to not only preprocess the data, but to classify reviews as positive or negative based on the 
+review text.
+
+Q1:
+Determine how many reviews there are in total.
+Determine the percent of 1, 2, 3, 4 and 5 star reviews.
+Create a new data set for modeling with the following columns:
+Column 1: 'positive' if review = 4 or 5, and 'negative' if review = 1 or 2
+Column 2: review text
+Take a look at the number of positive and negative reviews in the newly created data set.
+
+
+Q2:
+Prepare the data for modeling:
+
+Split the data into training and test sets. You should have four sets of data - X_train, X_test, y_train, y_test
+Create numerical features with Count Vectorizer. Create two document-term matrices:
+
+Matrix 1: Terms should be unigrams (single words), and values should be word counts (Hint: this is the Count Vectorizer default)
+Matrix 2: Terms should be unigrams and bigrams, and values should be binary values
+
+
+Q3:
+Use Logistic Regression to classify reviews as positive or negative. Do this for both matrices.
+
+Fit a Logistic Regression model on the training data
+Apply the model on the test data and calculate the following error metrics: accuracy, precision, recall, F1 score
+Optional: Visualize the confusion matrix for both models
+Compare the error metrics of the two matrices
+
+
+Q4:
+Let's try using another machine learning technique to classify these reviews as positive or negative. Go through the exact same 
+exercise in the previous step, except this time, use Naive Bayes instead of Logistic Regression.
+For count data, use Multinomial Naive Bayes. For binary data, use Bernoulli Naive Bayes.
+
+Compare the results of both the Logistic Regression and Naive Bayes models.
+
+
+Q5:
+Up to this point, we've been using Count Vectorizer to create document-term matrices to input into the models. For at least one of 
+the four models you've created so far, use TF-IDF Vectorizer instead of Count Vectorizer, and see if it improves the results.
+
+Out of all of the models you've created, which model do you think best classifies positive and negative cappuccino cup reviews?
