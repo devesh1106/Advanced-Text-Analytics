@@ -1,0 +1,391 @@
+#Downloading the 20news group data from sklearn
+from sklearn.datasets import fetch_20newsgroups
+df_train = fetch_20newsgroups(subset='train', shuffle=True, download_if_missing=False)
+df_test = fetch_20newsgroups(subset='test', shuffle=True, download_if_missing=False)
+
+#Importing the required Libraries
+from pprint import pprint
+from sklearn import metrics
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import nltk
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.stem.snowball import SnowballStemmer
+
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+from sklearn.naive_bayes import MultinomialNB
+import warnings 
+warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+from keras.callbacks import CSVLogger
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import SGDClassifier
+from sklearn.pipeline import Pipeline
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Activation, Embedding
+from keras.utils import to_categorical
+import string
+from nltk.stem import PorterStemmer
+from nltk import word_tokenize
+from nltk.corpus import stopwords
+
+#Checking the number of data distributions
+print("Number of articles in train data: " + str(len(df_train.data)))
+print("Number of diffrent categories in train data: " + str(len(df_train.target_names)))
+print("Number of articles in test data: " + str(len(df_test.data)))
+print("Number of diffrent categories in test data: " + str(len(df_test.target_names)))
+
+#Checking the target names
+pprint(list(df_train.target_names))
+
+#checking the train data shape
+df_train.filenames.shape
+
+#printing the first data
+df_train.data[1]
+
+#Checking the shape of the train-  target data
+df_train.target.shape
+df_test.target.shape
+df_train.target[:10]
+
+
+
+#### Pre-Processing and Modelling
+## Implementing Model 1 - MNB
+
+#Count vectorizer
+count_vect = CountVectorizer(stop_words='english')
+vectors_count = count_vect.fit_transform(df_train.data)
+vectors_test_count = count_vect.transform(df_test.data)
+
+#TFIDF Vectorizer
+vectorizer = TfidfVectorizer(stop_words='english')
+vectors = vectorizer.fit_transform(df_train.data)
+vectors_test = vectorizer.transform(df_test.data)
+
+#Creating a function for MNB
+def mnaive(x, y, X, Y):
+    mbern = MultinomialNB()
+    mbern.fit(x, y)
+    y_pred = mbern.predict(X)
+    acc = mbern.score(X,Y)
+    conf_m = confusion_matrix(Y, y_pred)
+    
+    plt.matshow(conf_m)
+    plt.title('Confusion matrix of the MNaive classifier')
+    plt.colorbar()
+    plt.savefig('heatmap_mnb.png')
+    
+    classreport = classification_report(Y, y_pred)
+    print('Accuracy is' + str(acc))
+    print('\nConfusion Matrix is' + str(conf_m))
+    print('\nEvaluation Metrics are:' + str(classreport))
+    
+#using TFIDF vect
+mnaive(vectors, df_train.target, vectors_test, df_test.target)
+
+#Using COunt Vectorizer
+mnaive(vectors_count, df_train.target, vectors_test_count, df_test.target)
+
+#As we can see from above, TFIDF could slightly perform better as compared to count vectorizer. TFIDF 0.81 whereas count had 0.80
+
+#Now we are trying to remove punctuations and include stemming to see if the results improve.
+
+
+#Defining stemming function
+def stemming_tokenizer(text):
+    stemmer = PorterStemmer()
+    return [stemmer.stem(w) for w in word_tokenize(text)]
+
+#setting pipeline
+stem_clf = Pipeline([ ('vectorizer', TfidfVectorizer(tokenizer=stemming_tokenizer, stop_words=stopwords.words('english') + list(string.punctuation))), ('classifier', MultinomialNB(alpha=0.005))])
+stem_clf = stem_clf.fit(df_train.data, df_train.target)
+
+#Evaluating on test
+pred_stem = stem_clf.predict(df_test.data)
+stem_clf.score(df_test.data, df_test.target)
+
+
+### Perfoming grid search to see if the results improve further
+# Using piplne to perform grid search over MNB
+mnb_clf = Pipeline([('vect', CountVectorizer(stop_words = 'english')), ('tfidf', TfidfTransformer()), ('clf', MultinomialNB())])
+mnb_clf = mnb_clf.fit(df_train.data, df_train.target)
+
+grid_param = {'vect__ngram_range': [(1, 1), (1, 2)], 'tfidf__use_idf': (True, False), 'clf__alpha': (1e-2, 1e-3)}
+grid_clf = GridSearchCV(mnb_clf, grid_param, n_jobs=-1)
+grid_clf = grid_clf.fit(df_train.data, df_train.target)
+
+# Checking the best parameter
+grid_clf.best_params_
+
+#Checking the best score
+grid_clf.best_score_
+
+#Evaluating on test data
+pred = grid_clf.predict(df_test.data)
+grid_clf.score(df_test.data, df_test.target)
+
+#As we can see above, vanilla MNB had an accuracy of 0.81 and with stemming we could slightly improve it to 0.83. 
+Further grid search had slightly improved results i.e. 0.84
+
+
+## Implementing Model 2 - SVM
+
+#defining a model for SVM
+def svm(x, y, X, Y):
+    svm = SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, n_iter=5, random_state=42)
+    svm.fit(x, y)
+    y_pred = svm.predict(X)
+    acc = svm.score(X,Y)
+    conf_m = confusion_matrix(Y, y_pred)
+    
+    plt.matshow(conf_m)
+    plt.title('Confusion matrix of the SVM classifier')
+    plt.colorbar()
+    plt.savefig('heatmap-svm.png')
+    
+    classreport = classification_report(Y, y_pred)
+    print('Accuracy is' + str(acc))
+    print('\nConfusion Matrix is' + str(conf_m))
+    print('\nEvaluation Metrics are:' + str(classreport))
+    
+    
+#using TFIDF vect
+svm(vectors, df_train.target, vectors_test, df_test.target)
+
+#using count vect
+svm(vectors_count, df_train.target, vectors_test_count, df_test.target)
+
+#As we can see, the results with TFIDF (0.82) had much better results as compared to count for SVM (0.77)
+#Performing grid search to see if the results further improve
+
+
+# Implementing SVM
+svm_clf = Pipeline([('vect', CountVectorizer(stop_words = 'english')), ('tfidf', TfidfTransformer()),
+                         ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, n_iter=5, random_state=42))])
+#Grid Search over SVM
+param_svm = {'vect__ngram_range': [(1, 1), (1, 2)], 'tfidf__use_idf': (True, False),'clf-svm__alpha': (1e-2, 1e-3)}
+grid_clf_svm = GridSearchCV(svm_clf, param_svm, n_jobs=-1)
+grid_clf_svm = grid_clf_svm.fit(df_train.data, df_train.target)
+grid_clf_svm.best_params_
+
+
+#getting the best score on train
+grid_clf_svm.best_score_
+
+#Evaluating on test data
+grid_clf_svm.score(df_test.data, df_test.target)
+
+
+#Grid search again further improved the score slightly from 0.82 to 0.83
+#Trying Steming to see if the results improve
+
+#Defining stem function
+def stemming_tokenizer(text):
+    stemmer = PorterStemmer()
+    return [stemmer.stem(w) for w in word_tokenize(text)]
+
+stem_clf_svm = Pipeline([ ('vectorizer', TfidfVectorizer(tokenizer=stemming_tokenizer, stop_words=stopwords.words('english') + list(string.punctuation))), ('classifier', SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, n_iter=5, random_state=42))])
+stem_clf_svm = stem_clf_svm.fit(df_train.data, df_train.target)
+
+#Evaluating on test
+pred_stem = stem_clf_svm.predict(df_test.data)
+stem_clf_svm.score(df_test.data, df_test.target)
+
+#As we can see above, SVM had an accuracy of 0.83 with grid search and with steming the score (0.82) did not improve
+
+
+
+
+
+###  Implementing Deep Learning Methods
+## Model -3 LSTM
+
+# Extract text
+texts = df_train.data 
+
+# Extract target
+target = df_train.target 
+
+#Setting the vocab size less so that the less frequent words get removed. Also, for lesser train time
+vocab_size = 20000
+
+# Setup tokenizer
+token = Tokenizer(num_words = vocab_size) 
+token.fit_on_texts(texts)
+
+# Setup tokenizer
+seq = token.texts_to_sequences(texts) 
+
+#Creating word index to feed into model
+word_index = token.word_index
+print('Found %s unique tokens.' % len(word_index))
+
+# Get the average length of a text
+avg = sum( map(len, seq) ) / len(seq)
+
+# Get the standard deviation of the sequence length
+std = np.sqrt(sum( map(lambda x: (len(x) - avg)**2, seq)) / len(seq))
+avg,std
+
+
+# we can see that avg length of the word is 302, however, we are setting it to just 100 for lesser train time
+max_length = 100
+final_data = pad_sequences(seq, maxlen=max_length)
+
+#encoding lables using one-hot encoding
+labels = to_categorical(np.asarray(target))
+print('Shape of data:', final_data.shape)
+print('Shape of labels:', labels.shape)
+
+#Here we are using glove embeddings of dim 100
+
+# We create a dictionary of word -> embedding
+embed_index = {} 
+f = open('glove.6B.100d.txt')
+
+# In the dataset, each line represents a new word embedding
+# The line starts with the word and the embedding values follow
+for line in f:
+    val = line.split()
+    
+    # The first value is the word, the rest are the values of the embedding
+    word = val[0] 
+    
+    # Load embedding
+    embedd = np.asarray(val[1:], dtype='float32') 
+    
+    # Add embedding to our embedding dictionary
+    embed_index[word] = embedd
+f.close()
+
+print('Found %s word vectors.' % len(embed_index))
+
+
+# Create a matrix of all embeddings
+comb_emb = np.stack(embed_index.values())
+
+# Calculate mean
+comb_emb_mean = comb_emb.mean() 
+
+# Calculate standard deviation
+comb_emb_std = comb_emb.std() 
+comb_emb_mean, comb_emb_std
+
+
+# We use 100 dimensional glove vectors
+embedding_dim = 100 
+
+word_index = token.word_index
+# Number of words 
+count_words = min(vocab_size, len(word_index)) 
+
+# Create a random matrix with the same mean and std as the embeddings
+embed_matrix = np.random.normal(comb_emb_mean, comb_emb_std, (count_words, embedding_dim))
+
+# Loop over all words in the word index
+for word, i in word_index.items():
+    
+    # If we are above the amount of words we want to use we do nothing
+    if i >= vocab_size: 
+        continue
+        
+    # Get the embedding vector for the word
+    embed_vector = embed_index.get(word)
+    
+    # If there is an embedding vector, put it in the embedding matrix
+    if embed_vector is not None: 
+        embed_matrix[i] = embed_vector
+        
+        
+ #Setting up LSTM
+model_lstm = Sequential()
+model_lstm.add(Embedding(vocab_size, 
+                    embedding_dim, 
+                    input_length=max_length, 
+                    weights = [embed_matrix], 
+                    trainable = False))
+model_lstm.add(LSTM(128))
+model_lstm.add(Dense(20))
+model_lstm.add(Activation('softmax'))
+model_lstm.summary()
+
+
+#Compiling a lstm model
+model_lstm.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['acc'])
+csv_logger = CSVLogger('LSTM_log.csv', append=True, separator=';')
+model_lstm.fit(final_data,labels,validation_split=0.2,epochs = 10, callbacks=[csv_logger])
+
+
+#We tried implementing state of the art methods like LSTM, RNN. However, we could not achieve best results. Long lengths of the 
+articles could be one of the reasons.
+
+
+## Model - 4 RNN
+#Implementing LSTM with RNN dropout
+model_rnn = Sequential()
+model_rnn.add(Embedding(vocab_size, 
+                    embedding_dim, 
+                    input_length=max_length, 
+                    weights = [embed_matrix], 
+                    trainable = False))
+
+# Now with recurrent dropout with a 10% chance of removing any element
+model_rnn.add(LSTM(128, recurrent_dropout=0.1)) 
+model_rnn.add(Dense(20))
+model_rnn.add(Activation('softmax'))
+model_rnn.summary()
+
+
+#Compiling the model
+model_rnn.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['acc'])
+
+csv_logger = CSVLogger('Rnn_log.csv', append=True, separator=';')
+model_rnn.fit(final_data,labels,validation_split=0.2,epochs= 20, callbacks=[csv_logger])
+
+
+#Reading back the logs saved while building abvoe models for plotting
+lstm_log = pd.read_csv('LSTM_log.csv', sep = ';')
+rnn_log = pd.read_csv('Rnn_log.csv', sep = ';')
+
+
+#Defining a function for plotting results
+def plot_results(results):
+    plt.plot(results['acc'])
+    plt.plot(results['val_acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.savefig('lstm.png') #rnn also
+    plt.show()
+    
+    # summarize history for loss
+    plt.plot(results['loss'])
+    plt.plot(results['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.savefig('lstm1.png') #rnn also
+    plt.show()
+    
+    
+#Plots for RNN
+plot_results(rnn_log)
+
+#Plots for LSTM
+plot_results(lstm_log)
+
