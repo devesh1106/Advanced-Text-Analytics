@@ -1,0 +1,35 @@
+Lets download the complete works of sherlock holmes and do some detective work using REGEX.
+
+Q1:Search out all the years and dates that appear in the story
+One of Sherlock Holmes' famous catch phrases is the use of the word 'undoubtedly'
+How many times is the word 'undoubtedly' used?
+
+
+Q2:
+Characters are announced very deliberatly in the language of the setting in Victorian England. We can use this later to find 
+characters in the book. But for now let's practice on a character we know.
+How often is Sherlock Holmes refered to by 'Mr. Sherlock Holmes' vs 'Sherlock Holmes' vs. 'Mr. Holmes' vs 'Sherlock'
+
+
+Q3:
+Find all the doctors in the collection.
+make a list of all the characters that appear in the collection (hint: Mrs. Mr. Miss Dr. etc).
+
+
+Q4:
+Search out all the years and dates that appear in the story
+
+
+Q5:
+Sherlock holmes is frequently smoking his pipe. But like many verbs in english, there are many ways that the word smoking can be 
+conjugated depending on the context.
+
+capture all sentences that take about smoking (smoke, smokes, smoking, smoked)
+capture the two words that appear after the smoking word
+capture the two words that appear before the smoking word
+
+
+Q6:
+Often we will recieve a block of unstructured text and want to use REGEX to provide some structure. 
+In this case, we may want to split the book by chapter.
+
