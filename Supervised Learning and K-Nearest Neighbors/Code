@@ -1,0 +1,126 @@
+from __future__ import print_function
+import os
+import nltk
+import pandas as pd
+data_path = ['..', '..', 'data']
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+Q1:
+# Importing "Orange_Telecom_Churn_Data.csv" from the data folder
+churn_data = pd.read_csv(r'data\Orange_Telecom_Churn_Data.csv')
+churn_data.head()
+
+#Explanation
+When we talk about state, area code and phone number, these variables will not hold any importance while building a machine learning 
+model. The reason being them not having relevant distinctive information which is required while training the model. Even if we consider 
+the business outcome over here, which is to look at the customer churn data for a telecom industry, users' behavior and usage of a 
+network does not depend on their phone number or area code or the state (assumption being the uniform coverage by telecom network 
+throughout)
+
+# Dropping state, area code and phone number
+churn_data = churn_data.drop(columns = ['state','area_code','phone_number'],axis = 1)
+churn_data.head()
+
+
+Q2:
+# Identifying the data type
+churn_data.info()
+
+# Scaling all variables except the ones with object and bool data type
+scaling_data = churn_data.drop(columns = ['intl_plan','voice_mail_plan','churned'],axis=1)
+
+# Transforming the dataset
+ss = StandardScaler()
+scaled_data = pd.DataFrame(ss.fit_transform(scaling_data))
+scaled_data.head()
+
+# Getting the column names from the original dataset
+orig_col = list(churn_data)
+
+# Maintaing the column names apart from the ones dropped above
+dropped_col = ['intl_plan','voice_mail_plan','churned']
+new_col = [item for item in orig_col if item not in dropped_col]
+scaled_data.columns = new_col
+scaled_data.head()
+
+# Using one hot encoding for changing the object data type
+le = LabelEncoder()
+scaled_data['intl_plan'] = le.fit_transform(churn_data['intl_plan'])
+scaled_data['voice_mail_plan'] = le.fit_transform(churn_data['voice_mail_plan'])
+scaled_data['churned'] = churn_data['churned']     # Maintaining the churned as True and False only
+scaled_data.head()
+
+scaled_data.info()
+
+
+Q3:
+# Creating 2 tables: one with the label as 'churned' column and another one with all other feature columns
+feature = scaled_data.drop('churned',axis = 1)
+label = scaled_data['churned']
+
+# Fitting K-nearest neighbors model with k=3
+k_model = KNeighborsClassifier(n_neighbors = 3)
+k_model.fit(feature,label)
+
+# Using the model to predict the result
+pred_label = k_model.predict(feature)
+
+
+Q4:
+# Writing a function
+def accuracy(pred_label,label):
+    return round(sum(pred_label == label)*100/len(label),1)
+
+print('Accuracy: %s %%'%accuracy(pred_label,label))
+
+
+Q5:
+# Part 1: Using weighted distances
+k_model_wd = KNeighborsClassifier(n_neighbors = 3, weights = 'distance')
+k_model_wd.fit(feature,label)
+pred_label_wd = k_model_wd.predict(feature)
+print('Accuracy using weighted distance: %s %%'%accuracy(pred_label_wd,label))
+
+#Reason for 100% accuracy
+When we are using weighted distance, it is using weighted average of the neighbors by weighing by a factor of 1/d. This leads to the 
+nearer data points have a more weightage than the farther ones. And now since weighting is used, this algorithm becomes a global one 
+since all training instances will be used. And due to this very reason, the accuracy will always be 100%
+
+# Part 2: Using Uniform weights and Minkowski distance with p=1
+k_model_ud = KNeighborsClassifier(n_neighbors = 3, p = 1)   # default is uniform weights
+k_model_ud.fit(feature,label)
+pred_label_ud = k_model_ud.predict(feature)
+print('Accuracy using uniform distance and Minkowski distance: %s %%'%accuracy(pred_label_ud,label))
+
+
+Q6:
+# Creating an array for storing accuracy values
+accuracy_values = np.zeros(20)
+
+# Running the model in loop across 20 iterations
+for i in range(20):
+    k_model = KNeighborsClassifier(n_neighbors = i+1, p = 1)
+    k_model.fit(feature,label)
+    pred_label = k_model.predict(feature)
+    accuracy_values[i] = accuracy(pred_label,label)
+print(accuracy_values)
+
+# Plotting accuracy values wrt k
+plt.plot(np.arange(1,21,1),accuracy_values)
+plt.title('Overall Accuracy vs k')
+plt.ylabel('Overall Accuracy (%ge)')
+plt.xlabel('k Value')
+
+
+#Observation & Explanation for k=1 case
+For k=1, we can observe that overall accuracy is 100%
+How K-means work is that it searches for k observations in the training dataset which would be the closest and then use the most
+popular value from that. Now when our k value is 1, we are testing on the exact same data which will lead to making correct
+predictions always. KNN will search for the 1 (since k=1) nearest data and find the same exact data because it has memorized the 
+training data.
