@@ -1,0 +1,67 @@
+import re
+
+text = ''
+with open('cnus.txt','r') as f:
+    text = " ".join([l.strip() for l in f.readlines()])
+    
+text[2611:3000]
+
+
+Q1:
+occurence = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape('undoubtedly'), text))
+print(occurence)
+
+
+Q2:
+# Searching Mr. Sherlock Holmes
+condition1 = 'Mr.(?= Sherlock Holmes)'
+print("Mr. Sherlock Holmes:", len(re.findall(condition1,text)))
+
+# Searching Sherlock Holmes
+condition2 = ' Sherlock Holmes(?<!Mr.)'
+print("Sherlock Holmes:", len(re.findall(condition2,text)))
+
+# Searching Mr. Holmes
+condition3 = 'Mr.(?= Holmes)'
+print("Mr. Holmes:", len(re.findall(condition3,text)))
+
+# Searching Sherlock
+condition4 = ' Sherlock(?<!Mr.)' and 'Sherlock (?!Holmes)'
+print("Sherlock:", len(re.findall(condition4,text)))
+
+
+Q3:
+# Finding all the doctors in the collection
+set(re.findall(r"(?:Dr\.) [a-zA-Z]+",text))
+
+# List of all Characters
+set(re.findall(r"(?:Mr\.|Mrs\.|Dr\.|Miss) [a-zA-Z]+",text))
+
+
+Q4:
+#Finding all the Years
+set(re.findall(r"(?:1[789]+[0-9]+[0-9])",text))
+
+# Finding all the Dates
+set(re.findall(r"(?:\d+th\sof\s)(?:January|February|March|April|May|June|July|August|September|October|November|December)\
+(?:(?:,\s(?:\d+|'\d+))|(?:\sof\s'\d+))|(?:\d+th\sof\s)(?:January|February|March|April|May|June|July|August|September|\
+October|November|December)|(?:January|February|March|April|May|June|July|August|September|October|November|December)\
+(?:(?:,\s(?:\d+|'\d+))|(?:\sof\s'\d+))|(?:January|February|March|April|May|June|July|August|September|October|November|\
+December)(?:\s\d+(?:,|th))(?:\s\d+)|(?:January|February|March|April|May|June|July|August|September|October|November|\
+December)(?:\s\d+(?:,|th))",text))
+
+
+Q5:
+# Printing all sentences talking about smoking
+set(re.findall(r"([^.]*(?:smoke|smokes|smoking|smoked)[^.]*\.)",text.lower()))
+
+# Printing 2 words after smoking word
+set(re.findall(r"(?:smoking)\s+(?:\w+(?:\s+|$)){2}",text.lower()))
+
+# Printing 2 words before smoking word
+set(re.findall(r"(?:\w+(?:\s)){2}(?:smoking)",text.lower()))
+
+
+Q6:
+split_text = re.split("CHAPTER (?:I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV)\s", text)
+print(split_text[2])
